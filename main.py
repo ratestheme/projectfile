@@ -224,9 +224,9 @@ class ToggleButton(QWidget):
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.theme_config_path = "theme_config.json"
+        
         self.current_hue = 190  # Default blue hue
-        self.load_theme_config()
+        
         
         # GitHub raw URLs
         self.ui_url = "https://raw.githubusercontent.com/ratestheme/project-1/main/interface.ui"
@@ -348,7 +348,7 @@ class MainWindow(QMainWindow):
         self.load_service_config()
         self.setup_game_booster_ui()
         self.setup_one_click_page()
-        self.setup_theme_editor()
+        
         self.setup_process_manager()
          
 
@@ -363,19 +363,9 @@ class MainWindow(QMainWindow):
         except:
             return False   
         
-    def load_theme_config(self):
-        if os.path.exists(self.theme_config_path):
-            try:
-                with open(self.theme_config_path, "r") as f:
-                    config = json.load(f)
-                    self.current_hue = config.get("hue", 190)
-                    self.update_theme_color(self.current_hue, initial_load=True)
-            except:
-                pass
+    
 
-    def save_theme_config(self):
-        with open(self.theme_config_path, "w") as f:
-            json.dump({"hue": self.current_hue}, f)
+    
 
     def update_optimization_stats(self):
         total = len(self.toggles)
@@ -724,125 +714,7 @@ class MainWindow(QMainWindow):
    
 
     
-    def setup_theme_editor(self):
-        # Get the page index for "item12" (adjust if needed)
-        page_index = 10  # Assuming item12 is page 11
-        page = self.stackedWidget.widget(page_index)
-        page.setLayout(QVBoxLayout())
-        page.layout().setContentsMargins(20, 20, 20, 20)
-        page.layout().setSpacing(15)
-
-        # Top Frame - Theme Presets
-        top_frame = QFrame()
-        top_frame.setLayout(QGridLayout())
-        
-        # Add 6 preset containers
-        presets = [
-            ("#7fddfa → #8ff9eb", "Default Gradient"),
-            ("#82e6f5", "Primary Color"),
-            ("#3498db", "Classic Blue"),
-            ("#9b59b6", "Purple"),
-            ("#2ecc71", "Emerald"),
-            ("#e74c3c", "Alizarin")
-        ]
-        
-        for i, (color, text) in enumerate(presets):
-            container = QFrame()
-            container.setFixedSize(120, 80)
-            container.setStyleSheet(f"""
-                QFrame {{
-                    background: {color.split('→')[0].strip() if '→' in color else color};
-                    border-radius: 8px;
-                    border: {'2px solid #7fddfa' if i==0 else 'none'};
-                }}
-            """)
-            layout = QVBoxLayout(container)
-            btn = QPushButton(text)
-            btn.clicked.connect(self.apply_preset)
-            btn.setStyleSheet("""
-                QPushButton {
-                    background: rgba(0,0,0,0.3);
-                    color: white;
-                    border: none;
-                    padding: 4px;
-                    border-radius: 4px;
-                }
-            """)
-            layout.addStretch()
-            layout.addWidget(btn)
-            top_frame.layout().addWidget(container, i//3, i%3)
-
-        # Bottom Frame - Color Picker
-        bottom_frame = QFrame()
-        bottom_frame.setLayout(QVBoxLayout())
-        
-        # Hue Slider
-        self.hue_slider = QSlider(Qt.Horizontal)
-        self.hue_slider.setRange(0, 359)
-        #self.hue_slider.setValue(190)  # Default blue hue
-        self.hue_slider.valueChanged.connect(self.update_theme_color)
-        self.hue_slider.setValue(self.current_hue)
-        self.update_theme_color(self.current_hue, initial_load=True)
-        
-        
-        
-        bottom_frame.layout().addWidget(QLabel("Color Hue:"))
-        bottom_frame.layout().addWidget(self.hue_slider)
-        
-
-        # Add to page
-        page.layout().addWidget(top_frame)
-        page.layout().addWidget(bottom_frame)
     
-    def apply_preset(self):
-        sender = self.sender()
-        if sender:
-            preset_text = sender.text()
-            if "Default Gradient" in preset_text:
-                self.hue_slider.setValue(190)  # Default blue hue
-            elif "Primary Color" in preset_text:
-                self.hue_slider.setValue(210)  # Light blue
-            elif "Classic Blue" in preset_text:
-                self.hue_slider.setValue(240)  # Deep blue
-            elif "Purple" in preset_text:
-                self.hue_slider.setValue(280)  # Purple hue
-            elif "Emerald" in preset_text:
-                self.hue_slider.setValue(140)  # Green hue
-            elif "Alizarin" in preset_text:
-                self.hue_slider.setValue(0)  # Red hue
-            # Update the color preview
-         
-    def update_theme_color(self, hue, initial_load=False):
-        self.current_hue = hue
-        color = QColor()
-        color.setHsv(hue, 150, 245)
-        hex_color = color.name()
-        
-        # Update sidemenu gradient
-        gradient = f"QFrame {{ background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 {hex_color}, stop:1 {color.lighter(115).name()}); border-radius: 10px; }}"
-        self.sidemenu.setStyleSheet(gradient)
-        
-        # Update toggle buttons
-        self.update_toggle_colors(hex_color)
-        
-        # Update progress bars and other elements
-        self.progressBar.progress_color = QColor(hex_color)
-        self.progressBar.update()
-        self.one_click_btn.setStyleSheet(f"background: {hex_color};")
-        self.add_game_btn.setStyleSheet(f"background: {hex_color}; border-radius: 20px; color: white; padding: 10px; font-size: 16px; font-weight: bold; ")
-        self.beast_mode_btn.setStyleSheet(f"background: {hex_color}; color: white; font-weight: bold; border-radius: 5px; padding: 6px; ")
-        self.balanced_mode_btn.setStyleSheet(f"background: {hex_color}; color: white; font-weight: bold; border-radius: 5px; padding: 6px; ")
-        self.label.setStyleSheet(f"color: {hex_color}; font-size: 20px; font-weight: bold;")
-        self.update_checkbox_colors()
-        # Save config unless initial load
-        if not initial_load:
-            self.save_theme_config()
-
-    def update_toggle_colors(self, color_hex):
-        for toggle in self.toggles:
-            if isinstance(toggle, ToggleButton):
-                toggle.update_colors(color_hex)
-        
         
 
     def setup_one_click_page(self):
